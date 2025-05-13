@@ -1,13 +1,5 @@
 # Written by Garrett H.
 
-<#
-This is a script that was utilized during Case Studies during the Fall Semester of 2025 to establish persistence on any Windows machines accessed.
-It has two key parts of its persistence:
-1. It installs and creates a dnscat shell that is sent to a host kali ubuntu machine.
-   This dnscat shell has two backups in the forms of scheduled tasks. One that brings it back after every boot, and one that checks every 5 minutes for it.
-2. It creates a backup group and user, named backupadmins and rsyncd respectively.
-#>
-
 # This section establishes the static settings
 $KALI_IP     = "..." # The host kali machine that will host the dnscat shell
 $PORT        = "8080"

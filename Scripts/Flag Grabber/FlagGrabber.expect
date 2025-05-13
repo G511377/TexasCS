@@ -1,0 +1,143 @@
+# Written by Garrett H.
+
+#!/usr/bin/expect -f
+
+# Set the timeout for the expect script
+set timeout 20
+
+# Proxy connection details for SSH jump
+set proxy_user "..."  # Proxy username
+set proxy_host "..."  # Proxy host IP or domain
+set proxy_port "..."  # Proxy port
+set proxy_pass "..."  # Proxy password
+set proxy_jump "$proxy_user@$proxy_host:$proxy_port"  # Complete proxy jump string
+
+# SSH connection details for target system (unioncity)
+set ssh_user "Administrator"  # SSH username for the target system
+set ssh_host "unioncity.aero.newjersey.tu"  # Target host IP or domain
+set ssh_pass "..."  # SSH password for the target system
+set root_pass "..."  # Root password for privilege escalation
+
+# Log file path for saving output
+set log_path "/mnt/c/Users/.../Desktop/unioncity_flag_log.txt"
+
+# Open log file for appending
+set fp [open "$log_path" "a"]
+
+# Add a timestamp to the log to indicate when the script was run
+set timestamp [clock format [clock seconds] -format "%Y-%m-%d %H:%M:%S"]
+puts $fp "\n========== Run at $timestamp =========="
+
+# Start SSH connection to unioncity through proxy jump
+puts $fp "Connecting to unioncity via proxy as Administrator..."
+spawn ssh -J $proxy_jump $ssh_user@$ssh_host -o StrictHostKeyChecking=no
+
+# Handle proxy password prompt and regular SSH login password prompt
+expect {
+    "$proxy_user@$proxy_host's password:" {
+        send "$proxy_pass\r"  # Send the proxy password
+        exp_continue  # Continue to the next prompt
+    }
+    "assword:" {
+        send "$ssh_pass\r"  # Send SSH password for the target system
+    }
+    timeout {
+        puts $fp "SSH connection to unioncity timed out."  # Timeout if connection fails
+        close $fp
+        exit 1
+    }
+}
+
+# Confirm SSH login to the target system
+expect {
+    "$ " {
+        puts $fp "Connected to unioncity as Administrator."  # Success message
+    }
+    timeout {
+        puts $fp "SSH login to Administrator@unioncity failed."  # Failure message
+        close $fp
+        exit 1
+    }
+}
+
+# Perform privilege escalation to root
+send "su\r"  # Send the 'su' command to switch to the root user
+expect "Password:"
+send "$root_pass\r"  # Send the root password for privilege escalation
+
+# Check if root prompt is achieved
+expect {
+    "# " {
+        puts $fp "Privilege escalation to root successful."  # Success message
+    }
+    timeout {
+        puts $fp "su to root failed."  # Failure message
+        close $fp
+        exit 1
+    }
+}
+
+# Navigate to the flags directory and list contents
+send "cd /flags\r"  # Change directory to /flags
+expect {
+    -re ".*#" {
+        send "ls -1\r"  # List files in the /flags directory
+        expect {
+            -re "\n(.*)\r\n.*#" {
+                set raw_output $expect_out(buffer)  # Capture the output of the 'ls' command
+                set flags_output ""  # Initialize an empty string for flag filenames
+
+                # Process each line of the directory listing
+                foreach line [split $raw_output "\n"] {
+                    # Remove any ANSI escape sequences for color codes from filenames
+                    regsub -all {\x1b\[[0-9;?]*[a-zA-Z]} $line "" cleaned
+                    set trimmed [string trim $cleaned]  # Trim any leading or trailing spaces
+
+                    # Accept only valid filenames (alphanumeric, underscores, dots, and hyphens)
+                    if {[regexp {^[a-zA-Z0-9._-]+$} $trimmed]} {
+                        append flags_output "$trimmed\n"  # Append the valid filename to the output string
+                    }
+                }
+
+                # Log the valid flag filenames
+                puts $fp "Flag file(s):\n$flags_output"
+
+                # Loop through each valid flag file and read its contents
+                foreach filename [split $flags_output "\n"] {
+                    if {[string length $filename] > 0} {
+                        send "cat /flags/$filename\r"  # Read the contents of the flag file
+                        expect {
+                            -re "(?s)\r\n(.*?)\r\n.*#" {
+                                set content $expect_out(1,string)  # Capture the content of the flag file
+                                puts $fp "\nContents of $filename:\n$content"  # Log the file content
+                            }
+                            timeout {
+                                puts $fp "Timeout reading $filename."  # Timeout if reading the file fails
+                            }
+                        }
+                    }
+                }
+            }
+            timeout {
+                puts $fp "Failed to read flags directory."  # Timeout if the directory reading fails
+            }
+        }
+    }
+    timeout {
+        puts $fp "Failed to cd into /flags."  # Timeout if changing to /flags directory fails
+    }
+}
+
+# Cleanup by clearing history and closing the session
+send " history -c; history -w\r"  # Clear the history
+expect "# "
+send "exit\r"  # Exit from the root session
+expect "$ "
+send " history -c; history -w\r"  # Clear history one more time
+expect "$ "
+send "exit\r"  # Exit from the SSH session
+
+# End the session and log the outcome
+expect eof
+puts $fp "Session ended.\n"
+close $fp  # Close the log file
