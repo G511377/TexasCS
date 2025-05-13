@@ -18,7 +18,7 @@ Run python3 -m http.server 8080 at the directory /home/zathras/Desktop/dnscat/cl
 
 Step 4
 [ON WINDOWS VICTIM]
-Run powershell -ExecutionPolicy Bypass -File .\7daystodie.ps1 at the directory C:/Users/[victim user]/Desktop/.
+Run powershell -ExecutionPolicy Bypass -File .\WindowsPersistence.ps1 at the directory C:/Users/[victim user]/Desktop/.
 The .ps1 file will self-delete.
 
 Step 5
