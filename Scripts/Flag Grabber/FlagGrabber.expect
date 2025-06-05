@@ -38,7 +38,7 @@ expect {
         send "$proxy_pass\r"  # Send the proxy password
         exp_continue  # Continue to the next prompt
     }
-    "assword:" {
+    "Password:" {
         send "$ssh_pass\r"  # Send SSH password for the target system
     }
     timeout {
